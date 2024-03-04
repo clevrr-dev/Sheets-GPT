@@ -7,41 +7,66 @@ var models = [
   "gpt-3.5-turbo"
 ];
 
+var apiKey = "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";
+var apiEndpoint = "https://api.openai.com/v1/chat/completions";
+
 
 /**
- * Send prompt to api and return result
+ * Process arguments
  */
-function GPT(prompt, m = "gpt-3.5-turbo", t = 0.35) {
-  const apiKey = "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";
-  const apiEndpoint = "https://api.openai.com/v1/chat/completions";
-
+function GPT(prompt, temperature = 0.35, model = "gpt-3.5-turbo", ...optionalArgs) {
   // If no prompt is provided
   if (!prompt) {
     return "Error: Please provide a prompt";
   }
 
-  // If an invalid model is provided
-  if (!models.includes(m)) {
-    const m = `Error: Invalid model.
-
-    Choose one of these: 
-    - ${models.join("\n- ")}`
-    return m;
-  }
-
   // If temperature is invalid
-  if (!(t >= 0 && t <= 2)) {
+  if (!(temperature >= 0 && temperature <= 2)) {
     return "Error: Temperature must be within 0 and 2";
   }
 
+  // If an invalid model is provided
+  if (!models.includes(model)) {
+    const m = `Error: Invalid model`
+    return m;
+  }
+
+  const allPrompts = [];
+
+  Logger.log(optionalArgs);
+
+  if (optionalArgs.length > 0) {
+    for (let option of optionalArgs) {
+      const newPrompt = `${prompt} ${option}`
+      allPrompts.push(newPrompt);
+    }
+  } else {
+    allPrompts.push(prompt);
+  }
+
+  const responses = [];
+
+  for (let prompt of allPrompts) {
+    const response = sendToAPI(prompt, temperature, model);
+    responses.push(response)
+  };
+
+  return responses;
+}
+
+
+/**
+ * Send data to api and return response
+ */
+function sendToAPI(prompt, temperature, model) {
   const headers = {
     "Content-Type": "application/json",
     "Authorization": "Bearer " + apiKey
   }
 
   const data = {
-    "model": m,
-    "temperature": t,
+    "model": model,
+    "temperature": temperature,
     "messages": [
       { "role": "user", "content": prompt }
     ],
@@ -54,12 +79,10 @@ function GPT(prompt, m = "gpt-3.5-turbo", t = 0.35) {
   }
 
   // const response = UrlFetchApp.fetch(apiEndpoint, options);
-
   // const jsonData = JSON.parse(response.getContentText());
-
   // const message = jsonData.choices[0].message.content;
 
-  return "Done";
+  // return message;
 }
 
 
