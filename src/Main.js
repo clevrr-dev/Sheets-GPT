@@ -78,11 +78,11 @@ function sendToAPI(prompt, temperature, model) {
     "payload": JSON.stringify(data)
   }
 
-  // const response = UrlFetchApp.fetch(apiEndpoint, options);
-  // const jsonData = JSON.parse(response.getContentText());
-  // const message = jsonData.choices[0].message.content;
+  const response = UrlFetchApp.fetch(apiEndpoint, options);
+  const jsonData = JSON.parse(response.getContentText());
+  const message = jsonData.choices[0].message.content;
 
-  // return message;
+  return message;
 }
 
 
