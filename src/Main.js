@@ -5,12 +5,17 @@ var apiEndpoint = "https://api.openai.com/v1/chat/completions";
 
 
 /**
- * Process arguments
+ * Sends prompt to OpenAI GPT API
+ * 
+ * @param {string} prompt - The main prompt text.
+ * @param {string | cell} ...optioinalArgs - Additional data to include in the prompt.
+ * @return The response from the OpenAI GPT API.
+ * @customfunction
  */
 function GPT(prompt, ...optionalArgs) {
   // If no prompt is provided
   if (!prompt) {
-    return "Error: Please provide a prompt";
+    throw new Error("Error: Please provide a prompt");
   }
 
   const cacheKey = "GPT_CACHE_" + Utilities.base64EncodeWebSafe(prompt);
@@ -31,8 +36,6 @@ function GPT(prompt, ...optionalArgs) {
 
   const response = sendToAPI(prompt);
 
-  cache.put(cacheKey, response, 3600);
-
   return response;
 }
 
@@ -46,6 +49,8 @@ function sendToAPI(prompt) {
   const model = store.getProperty('model');
   const temperature = Number(store.getProperty('temperature'));
   const apiKey = store.getProperty("api-key");
+
+  Logger.log(apiKey);
 
   const headers = {
     "Content-Type": "application/json",
@@ -61,16 +66,29 @@ function sendToAPI(prompt) {
   };
 
   const options = {
+    "muteHttpExceptions": true,
     "method": "post",
     "headers": headers,
     "payload": JSON.stringify(data)
   }
 
   const response = UrlFetchApp.fetch(apiEndpoint, options);
-  const jsonData = JSON.parse(response.getContentText());
-  const message = jsonData.choices[0].message.content;
 
-  return message;
+  if (response.getResponseCode() >= 200 && response.getResponseCode() < 300) {
+    const jsonData = JSON.parse(response.getContentText());
+    const message = jsonData.choices[0].message.content;
+
+    // store in cache
+    const cacheTime = store.getProperty("cacheTime");
+    cache.put(cacheKey, response, Number(cacheTime));
+
+    return message;
+  } else {
+    // if an error occured
+    Logger.log("API request failed:", response);
+
+    throw new Error("Error: API request failed");
+  }
 }
 
 
@@ -80,7 +98,7 @@ function sendToAPI(prompt) {
 function test() {
   const settings = store.getProperty('temperature');
 
-  console.log(typeof(settings));
+  console.log(typeof (settings));
 }
 
 
