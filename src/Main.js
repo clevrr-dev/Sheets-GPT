@@ -1,3 +1,4 @@
+var store = PropertiesService.getUserProperties();
 var models = [
   "gpt-4",
   "gpt-4-preview",
@@ -14,10 +15,38 @@ var apiEndpoint = "https://api.openai.com/v1/chat/completions";
 /**
  * Process arguments
  */
-function GPT(prompt, temperature = 0.35, model = "gpt-3.5-turbo", ...optionalArgs) {
+function GPT(prompt, ...optionalArgs) {
   // If no prompt is provided
   if (!prompt) {
     return "Error: Please provide a prompt";
+  }
+
+  if (optionalArgs.length > 0) {
+    for (let option of optionalArgs) {
+      prompt += `, ${option}`;
+      // allPrompts.push(newPrompt);
+    }
+  }
+
+  // const responses = [];
+
+  // for (let prompt of allPrompts) {
+  const response = sendToAPI(prompt, 1, "gpt-3.5-turbo");
+  // responses.push(response)
+  // };
+
+  return response;
+}
+
+
+/**
+ * Set model and temperature
+ */
+function GPT_SETTINGS(model="gpt-3.5-turbo", temperature=0.35) {
+  // If an invalid model is provided
+  if (!models.includes(model)) {
+    const m = `Error: Invalid model`
+    return m;
   }
 
   // If temperature is invalid
@@ -25,35 +54,15 @@ function GPT(prompt, temperature = 0.35, model = "gpt-3.5-turbo", ...optionalArg
     return "Error: Temperature must be within 0 and 2";
   }
 
-  // If an invalid model is provided
-  if (!models.includes(model)) {
-    const m = `Error: Invalid model`
-    return m;
-  }
-
-  const allPrompts = [];
-
-  Logger.log(optionalArgs);
-
-  if (optionalArgs.length > 0) {
-    for (let option of optionalArgs) {
-      const newPrompt = `${prompt} ${option}`
-      allPrompts.push(newPrompt);
+  store.setProperties(
+    {
+      model: model,
+      temperature: temperature
     }
-  } else {
-    allPrompts.push(prompt);
-  }
+  )
 
-  const responses = [];
-
-  for (let prompt of allPrompts) {
-    const response = sendToAPI(prompt, temperature, model);
-    responses.push(response)
-  };
-
-  return responses;
+  return "Settings Saved";
 }
-
 
 /**
  * Send data to api and return response
