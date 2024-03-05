@@ -1,4 +1,6 @@
 var store = PropertiesService.getUserProperties();
+var cache = CacheService.getUserCache();
+
 var apiEndpoint = "https://api.openai.com/v1/chat/completions";
 
 
@@ -11,13 +13,25 @@ function GPT(prompt, ...optionalArgs) {
     return "Error: Please provide a prompt";
   }
 
+  const cacheKey = "GPT_CACHE_" + Utilities.base64EncodeWebSafe(prompt);
+
+  // check if result is already cached
+  const cachedResult = cache.get(cacheKey);
+
+  if (cachedResult) {
+    Logger.log("Getting from Cache");
+    return cachedResult;
+  }
+
   if (optionalArgs.length > 0) {
     for (let option of optionalArgs) {
-      prompt += `, ${option}`;
+      prompt += `,${option}`;
     }
   }
 
-  const response = sendToAPI(prompt, 1, "gpt-3.5-turbo");
+  const response = sendToAPI(prompt);
+
+  cache.put(cacheKey, response, 3600);
 
   return response;
 }
@@ -27,6 +41,8 @@ function GPT(prompt, ...optionalArgs) {
  * Send data to api and return response
  */
 function sendToAPI(prompt) {
+  Logger.log("Getting from API");
+
   const model = store.getProperty('model');
   const temperature = Number(store.getProperty('temperature'));
   const apiKey = store.getProperty("api-key");
